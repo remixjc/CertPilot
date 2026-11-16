@@ -19,7 +19,18 @@ try {
     }
     if ((Get-Service CertPilot).Status -ne 'Running') { throw 'Closing WPF stopped the service.' }
     $web = & curl.exe --silent --fail --insecure --max-time 10 'https://localhost:18443/'
-    if ($LASTEXITCODE -ne 0 -or $web -notmatch 'CertPilot') { throw 'Packaged Web UI is missing.' }
+    if ($LASTEXITCODE -ne 0 -or ($web -join "`n") -notmatch 'CertPilot') { throw 'Packaged Web UI is missing.' }
+    $docs = & curl.exe --silent --fail --insecure --max-time 10 'https://localhost:18443/api-docs.html'
+    if ($LASTEXITCODE -ne 0 -or ($docs -join "`n") -notmatch 'Web API') { throw 'Packaged API documentation is missing.' }
+    $asset = [regex]::Match(($web -join "`n"), 'src="(/assets/[^"]+\.js)"').Groups[1].Value
+    if (!$asset) { throw 'Web application script reference is missing.' }
+    & curl.exe --silent --fail --insecure --max-time 10 "https://localhost:18443$asset" > $null
+    if ($LASTEXITCODE -ne 0) { throw 'Packaged Web application script is missing.' }
+    # Updating the installed package must preserve the non-default port and data directory.
+    & (Join-Path $package 'scripts\install-service.ps1') -SourceDirectory $package -InstallDir $install -NoShortcut
+    $preserved = Get-Content (Join-Path $install 'service\appsettings.Local.json') -Raw | ConvertFrom-Json
+    if ($preserved.CertPilot.DataDirectory -ne $data -or $preserved.CertPilot.Port -ne 18443) { throw 'Update lost local configuration.' }
+    if ((Get-CimInstance Win32_Service -Filter "Name='CertPilot'").StartMode -ne 'Auto') { throw 'Service startup mode is not automatic.' }
     Write-Host 'PASS: native WPF startup/render; service registration/start; pinned HTTPS; bootstrap login/password change; credential/certificate CRUD; revision conflict; service remains running after WPF exits; packaged Web UI.'
 }
 finally {

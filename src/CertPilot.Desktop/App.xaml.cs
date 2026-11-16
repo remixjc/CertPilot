@@ -12,8 +12,9 @@ public partial class App : Application
         var output = Environment.GetEnvironmentVariable("CERTPILOT_SMOKE_OUTPUT");
         if (string.IsNullOrEmpty(output)) return;
         Directory.CreateDirectory(output); window.UpdateLayout();
-        var image = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-        image.Render(window);
+        var visual = (FrameworkElement)window.Content;
+        var image = new RenderTargetBitmap((int)visual.ActualWidth, (int)visual.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+        image.Render(visual);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
         using var file = File.Create(Path.Combine(output, name)); encoder.Save(file);
     }

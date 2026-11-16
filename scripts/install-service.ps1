@@ -35,6 +35,9 @@ if (![string]::Equals($source, $target, [StringComparison]::OrdinalIgnoreCase)) 
     }
 }
 $configPath = Join-Path $target 'service\appsettings.Local.json'
+# Migrate the original service-only installation's local settings into the new service subdirectory.
+$legacyConfig = Join-Path $target 'appsettings.Local.json'
+if (!(Test-Path $configPath) -and (Test-Path $legacyConfig)) { Copy-Item $legacyConfig $configPath }
 $config = if (Test-Path $configPath) { Get-Content $configPath -Raw | ConvertFrom-Json } else { [PSCustomObject]@{ CertPilot = [PSCustomObject]@{} } }
 if (!$config.CertPilot) { throw 'appsettings.Local.json must contain a CertPilot section.' }
 if ($PSBoundParameters.ContainsKey('DataDirectory')) {
