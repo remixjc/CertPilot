@@ -1,0 +1,456 @@
+<div id="certpilot" aria-label="CertPilot 证书管理交互原型">
+  <div class="cp-demo"><span>交互原型 · 所有数据与签发均为模拟</span><span>CertPilot / Windows Server</span></div>
+  <div class="cp-window">
+    <header class="cp-titlebar"><div class="cp-brand"><span class="cp-mark"><i data-lucide="shield-check" aria-hidden="true"></i></span><strong>CertPilot</strong><span class="cp-muted">证书自动化管理</span></div><button class="cp-icon cp-exit" aria-label="关闭管理界面"><i data-lucide="x" aria-hidden="true"></i></button></header>
+    <div class="cp-shell">
+      <aside class="cp-sidebar">
+        <div class="cp-caption">工作空间</div>
+        <nav aria-label="主导航">
+          <button class="cp-nav active" data-page="certs"><i data-lucide="files" aria-hidden="true"></i>证书管理<span class="cp-count"></span></button>
+          <button class="cp-nav" data-page="activity"><i data-lucide="history" aria-hidden="true"></i>任务记录</button>
+          <button class="cp-nav" data-page="credentials"><i data-lucide="key-round" aria-hidden="true"></i>DNS 凭据</button>
+          <button class="cp-nav" data-page="settings"><i data-lucide="settings-2" aria-hidden="true"></i>服务设置</button>
+          <button class="cp-nav" data-page="webapi"><i data-lucide="globe" aria-hidden="true"></i>Web 与 API</button>
+        </nav>
+        <div class="cp-service"><span class="cp-status cp-ok">● 后台服务运行中</span><span class="cp-muted">启动方式：自动</span><span class="cp-muted">关闭界面后继续续期</span></div>
+        <div class="cp-version">本机 · Windows Server<br>产品设计预览 / v0.2</div>
+      </aside>
+      <main class="cp-main"></main>
+    </div>
+    <div class="cp-closed" hidden><span class="cp-mark"><i data-lucide="shield-check" aria-hidden="true"></i></span><h2>管理界面已关闭</h2><p>后台服务保持运行，证书续期、Web 管理和 API 继续提供服务。</p><button class="cp-button cp-primary cp-reopen">重新打开管理界面</button><button class="cp-button cp-openmonitor">浏览器查看（模拟）</button><span class="cp-muted">模拟关闭 · 未操作本机 Windows 服务</span></div>
+    <div class="cp-toast" role="status" aria-live="polite" hidden></div>
+  </div>
+</div>
+<style>
+#certpilot {color-scheme:light dark;--cp-bg:light-dark(#f5f7fb,#121821);--cp-surface:light-dark(#ffffff,#1a2230);--cp-side:light-dark(#fafbfe,#161e29);--cp-text:light-dark(#1e2a3b,#e5eaf2);--cp-muted:light-dark(#647389,#a0acc0);--cp-line:light-dark(#e3e8f0,#303b4d);--cp-accent:light-dark(#345add,#8ba5ff);--cp-onaccent:light-dark(#ffffff,#111b37);--cp-soft:light-dark(#edf1ff,#263452);--cp-green:light-dark(#24704d,#89d5ad);--cp-greensoft:light-dark(#edf8f1,#203b30);--cp-orange:light-dark(#99631d,#efc182);--cp-orangesoft:light-dark(#fff6e8,#403321);--cp-red:light-dark(#b23f45,#ffadb0);--cp-redsoft:light-dark(#fff0f0,#41292e);font:14px/1.55 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--cp-text);width:100%}
+#certpilot * {box-sizing:border-box}
+#certpilot [hidden] {display:none!important}
+#certpilot button,#certpilot input,#certpilot select,#certpilot textarea {font:inherit}
+#certpilot button {cursor:pointer}
+#certpilot button:disabled {cursor:wait;opacity:.6}
+#certpilot button:focus-visible,#certpilot input:focus-visible,#certpilot select:focus-visible,#certpilot textarea:focus-visible {outline:2px solid var(--cp-accent);outline-offset:3px}
+#certpilot h1,#certpilot h2,#certpilot h3,#certpilot p {margin:0}
+#certpilot h1 {font-size:24px;font-weight:600;letter-spacing:-.5px}
+#certpilot h2 {font-size:19px;font-weight:600}
+#certpilot h3 {font-size:14px;font-weight:600}
+#certpilot strong {font-weight:600}
+#certpilot svg {width:17px;height:17px;flex-shrink:0}
+#certpilot .cp-demo {display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:0 2px 12px;font-size:12px;color:var(--cp-muted)}
+#certpilot .cp-window {position:relative;background:var(--cp-bg);border:1px solid var(--cp-line);border-radius:14px;overflow:hidden}
+#certpilot .cp-titlebar {background:var(--cp-surface);min-height:63px;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--cp-line);gap:12px}
+#certpilot .cp-brand {display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#certpilot .cp-brand strong {font-size:18px;letter-spacing:-.4px}
+#certpilot .cp-mark {display:inline-flex;align-items:center;justify-content:center;background:var(--cp-accent);color:var(--cp-onaccent);width:31px;height:34px;border-radius:10px}
+#certpilot .cp-muted {color:var(--cp-muted);font-size:12px}
+#certpilot .cp-icon {border:0;background:transparent;color:var(--cp-muted);display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px}
+#certpilot .cp-icon:hover {background:var(--cp-bg)}
+#certpilot .cp-shell {display:grid;grid-template-columns:174px minmax(0,1fr);min-height:670px}
+#certpilot .cp-sidebar {background:var(--cp-side);border-right:1px solid var(--cp-line);padding:25px 12px;display:flex;flex-direction:column;gap:15px}
+#certpilot .cp-caption {font-size:11px;letter-spacing:1px;color:var(--cp-muted);padding-left:12px}
+#certpilot nav {display:flex;flex-direction:column;gap:6px}
+#certpilot .cp-nav {border:0;background:transparent;color:var(--cp-muted);padding:11px 12px;display:flex;align-items:center;gap:9px;border-radius:7px;text-align:left}
+#certpilot .cp-nav.active {background:var(--cp-soft);color:var(--cp-accent);font-weight:600}
+#certpilot .cp-count {margin-left:auto;font-size:11px}
+#certpilot .cp-service {margin-top:auto;border-top:1px solid var(--cp-line);padding:18px 9px 0;display:flex;flex-direction:column;gap:5px;font-size:12px}
+#certpilot .cp-version {padding:0 9px;font-size:11px;color:var(--cp-muted);line-height:1.8}
+#certpilot .cp-main {padding:28px;min-width:0}
+#certpilot .cp-head {display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:23px}
+#certpilot .cp-head p {color:var(--cp-muted);margin-top:5px;font-size:12px}
+#certpilot .cp-button {display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--cp-line);background:var(--cp-surface);color:var(--cp-text);padding:8px 13px;border-radius:7px;white-space:nowrap;min-height:36px}
+#certpilot .cp-button:hover {filter:brightness(.97)}
+#certpilot .cp-primary {background:var(--cp-accent);border-color:var(--cp-accent);color:var(--cp-onaccent)}
+#certpilot .cp-danger {color:var(--cp-red)}
+#certpilot .cp-link {color:var(--cp-accent);background:transparent;border:0;padding:3px 0;text-align:left}
+#certpilot .cp-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:23px}
+#certpilot .cp-stat {background:var(--cp-surface);border:1px solid var(--cp-line);border-radius:9px;padding:15px 17px}
+#certpilot .cp-stat .cp-muted {display:flex;align-items:center;justify-content:space-between}
+#certpilot .cp-stat b {font-size:28px;line-height:1.7;font-weight:600;font-variant-numeric:tabular-nums}
+#certpilot .cp-stat small {display:block;font-size:11px;color:var(--cp-muted)}
+#certpilot .cp-tablebox {border:1px solid var(--cp-line);border-radius:9px;background:var(--cp-surface);overflow:hidden}
+#certpilot .cp-tabletop {padding:16px 18px;display:flex;gap:8px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--cp-line)}
+#certpilot .cp-table {width:100%;border-collapse:collapse;text-align:left;font-size:12px;table-layout:fixed}
+#certpilot .cp-table th {color:var(--cp-muted);font-size:11px;font-weight:400;background:var(--cp-side);padding:10px 16px}
+#certpilot .cp-table td {padding:18px 16px;vertical-align:middle;overflow-wrap:anywhere}
+#certpilot .cp-table tbody tr+tr {border-top:1px solid var(--cp-line)}
+#certpilot .cp-table td:first-child strong {display:block;margin-bottom:3px;font-size:13px}
+#certpilot .cp-table td:first-child .cp-link {display:block}
+#certpilot .cp-table td:first-child span {color:var(--cp-muted)}
+#certpilot .cp-status {display:inline-flex;align-items:center;gap:5px;font-size:11px;white-space:nowrap}
+#certpilot .cp-pill {padding:3px 8px;border-radius:5px}
+#certpilot .cp-ok {color:var(--cp-green)}
+#certpilot .cp-pill.cp-ok {background:var(--cp-greensoft)}
+#certpilot .cp-warn {color:var(--cp-orange)}
+#certpilot .cp-pill.cp-warn {background:var(--cp-orangesoft)}
+#certpilot .cp-bad {color:var(--cp-red)}
+#certpilot .cp-pill.cp-bad {background:var(--cp-redsoft)}
+#certpilot .cp-info {display:flex;gap:10px;align-items:flex-start;background:var(--cp-soft);color:var(--cp-accent);padding:13px 15px;border-radius:7px;font-size:12px;margin-top:18px}
+#certpilot .cp-info svg {margin-top:2px}
+#certpilot .cp-foot {display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px;font-size:11px;color:var(--cp-muted)}
+#certpilot .cp-stack {display:flex;flex-direction:column;gap:18px}
+#certpilot .cp-panel {border:1px solid var(--cp-line);background:var(--cp-surface);border-radius:9px;padding:20px}
+#certpilot .cp-panel h3 {margin-bottom:15px}
+#certpilot .cp-fields {display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#certpilot .cp-field {display:flex;flex-direction:column;gap:6px;font-size:12px;min-width:0}
+#certpilot .cp-field input,#certpilot .cp-field select,#certpilot .cp-field textarea {border:1px solid var(--cp-line);border-radius:6px;padding:9px 11px;background:var(--cp-surface);color:var(--cp-text);width:100%;min-width:0}
+#certpilot .cp-field textarea {resize:vertical;min-height:82px}
+#certpilot .cp-field small {color:var(--cp-muted);font-size:11px}
+#certpilot .cp-full {grid-column:1/-1}
+#certpilot .cp-check {display:flex;gap:9px;align-items:center;font-size:12px}
+#certpilot .cp-check input {accent-color:var(--cp-accent);width:16px;height:16px}
+#certpilot .cp-actions {display:flex;justify-content:flex-end;align-items:center;gap:9px;flex-wrap:wrap;margin-top:20px}
+#certpilot .cp-error {margin-top:16px;background:var(--cp-redsoft);color:var(--cp-red);padding:11px 14px;border-radius:7px;font-size:12px}
+#certpilot .cp-preview {font-family:Consolas,monospace;font-size:11px;color:var(--cp-muted);overflow-wrap:anywhere;background:var(--cp-bg);padding:12px;border-radius:6px}
+#certpilot .cp-back {display:inline-flex;gap:6px;align-items:center;color:var(--cp-muted);background:none;border:0;padding:0;margin-bottom:16px;font-size:12px}
+#certpilot .cp-detailgrid {display:grid;grid-template-columns:130px minmax(0,1fr);gap:13px;font-size:12px}
+#certpilot .cp-detailgrid dt {color:var(--cp-muted)}
+#certpilot .cp-detailgrid dd {margin:0;overflow-wrap:anywhere}
+#certpilot .cp-timeline {list-style:none;padding:0;margin:0}
+#certpilot .cp-timeline li {display:flex;gap:13px;padding:14px 0;border-bottom:1px solid var(--cp-line);font-size:12px;align-items:flex-start}
+#certpilot .cp-timeline li:last-child {border-bottom:0}
+#certpilot .cp-eventicon {color:var(--cp-accent);padding-top:2px}
+#certpilot .cp-timeline time {display:block;color:var(--cp-muted);font-size:11px;margin-top:3px}
+#certpilot .cp-eventbody {flex:1;min-width:0;overflow-wrap:anywhere}
+#certpilot .cp-toast {position:absolute;bottom:18px;left:50%;transform:translateX(-50%);padding:11px 18px;background:var(--cp-text);color:var(--cp-surface);border-radius:8px;font-size:12px;max-width:90%;z-index:5}
+#certpilot .cp-closed {padding:80px 25px;min-height:580px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+#certpilot .cp-closed p {font-size:13px;color:var(--cp-muted);max-width:380px}
+#certpilot .cp-credential {display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid var(--cp-line)}
+#certpilot .cp-credential:first-of-type {padding-top:0}
+#certpilot .cp-credential:last-child {border:0;padding-bottom:0}
+#certpilot .cp-credential p {font-size:12px;color:var(--cp-muted);margin-top:4px}
+#certpilot .cp-empty {padding:45px 20px;text-align:center;color:var(--cp-muted)}
+#certpilot .cp-progress {height:5px;border-radius:4px;background:var(--cp-line);overflow:hidden;margin-top:12px}
+#certpilot .cp-progress span {display:block;background:var(--cp-accent);height:100%;transition:width .2s}
+#certpilot .cp-json {white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0}
+#certpilot .cp-access {display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid var(--cp-line)}
+@media(max-width:800px) {
+  #certpilot .cp-main {padding:20px}
+  #certpilot .cp-shell {grid-template-columns:150px minmax(0,1fr)}
+  #certpilot .cp-table th,#certpilot .cp-table td {padding:13px 10px}
+  #certpilot .cp-col-format {display:none}
+  #certpilot .cp-stat {padding:12px}
+}
+@media(max-width:600px) {
+  #certpilot .cp-shell {display:block}
+  #certpilot .cp-sidebar {border-right:0;border-bottom:1px solid var(--cp-line);padding:10px}
+  #certpilot .cp-caption,#certpilot .cp-version {display:none}
+  #certpilot nav {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
+  #certpilot .cp-nav {padding:9px;font-size:12px}
+  #certpilot .cp-service {margin:0;padding:7px 9px 0;border:0;flex-direction:row;gap:10px;flex-wrap:wrap}
+  #certpilot .cp-service span:last-child {display:none}
+  #certpilot .cp-main {padding:18px 13px}
+  #certpilot .cp-stats {gap:7px}
+  #certpilot .cp-stat {padding:10px}
+  #certpilot .cp-stat b {font-size:24px}
+  #certpilot .cp-stat svg,#certpilot .cp-stat small {display:none}
+  #certpilot .cp-table {table-layout:auto}
+  #certpilot .cp-table th,#certpilot .cp-table td {padding:13px 8px}
+  #certpilot .cp-table th:first-child {width:auto!important}
+  #certpilot .cp-col-expiry {display:none}
+  #certpilot .cp-brand>.cp-muted {display:none}
+  #certpilot .cp-demo span:last-child {display:none}
+  #certpilot .cp-fields {grid-template-columns:1fr}
+  #certpilot .cp-detailgrid {grid-template-columns:85px minmax(0,1fr)}
+  #certpilot .cp-panel {padding:16px}
+}
+@media(pointer:coarse) {
+  #certpilot button {min-height:44px}
+  #certpilot input,#certpilot textarea,#certpilot select {font-size:16px!important}
+}
+</style>
+<script>
+(() => {
+  const root = document.getElementById('certpilot');
+  const main = root.querySelector('.cp-main');
+  const today = new Date('2026-11-16T00:00:00Z');
+  const initial = [
+    {id:'c1',name:'官方网站',domains:['example.com','www.example.com'],email:'ops@example.com',path:'D:\\Certificates\\website',base:'website',format:'both',method:'dns',credential:'cred1',webroot:'',auto:true,status:'valid',expires:'2027-01-17',next:'2026-12-18',algorithm:'rsa'},
+    {id:'c2',name:'业务泛域名',domains:['example.net','*.example.net'],email:'admin@example.net',path:'D:\\Certificates\\business',base:'business',format:'pfx',method:'dns',credential:'cred2',webroot:'',auto:true,status:'due',expires:'2026-12-01',next:'2026-11-16',algorithm:'rsa'},
+    {id:'c3',name:'内部网关',domains:['gateway.example.org'],email:'it@example.org',path:'D:\\Certificates\\gateway',base:'gateway',format:'pem',method:'dns',credential:'cred3',webroot:'',auto:true,status:'failed',expires:'2026-11-25',next:'等待修复 DNS 凭据',algorithm:'rsa'}
+  ];
+  let certs = initial.map(x => ({...x}));
+  let credentials = [
+    {id:'cred1',name:'Cloudflare · 主账号',provider:'Cloudflare',valid:true},
+    {id:'cred2',name:'阿里云 DNS · 业务账号',provider:'阿里云 DNS',valid:true},
+    {id:'cred3',name:'腾讯云 DNSPod · 网关账号',provider:'腾讯云 DNSPod',valid:false}
+  ];
+  let logs = [
+    {name:'内部网关',message:'续期失败：DNS API 凭据已失效，旧证书保留。修复后可重试。',time:'2026-11-16 09:42',bad:true},
+    {name:'业务泛域名',message:'已进入续期窗口，等待后台任务执行。',time:'2026-11-16 09:30'},
+    {name:'官方网站',message:'证书有效，尚未进入续期窗口。',time:'2026-11-16 09:30'}
+  ];
+  let page = 'certs', selected = null, jobs = new Map(), toastTimer;
+  let web = {mode:'local',port:'8443',ip:'192.168.1.10',hostname:'certpilot.example.com',trusted:false};
+  let apiResult=null, inspection=null, inspecting=false, inspectTarget='';
+  const webOrigin=()=>web.mode==='local'?`https://localhost:${web.port}`:`https://${web.hostname}:${web.port}`;
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
+  const days = c => Math.max(0,Math.ceil((new Date(c.expires+'T00:00:00Z')-today)/86400000));
+  const formatLabel = c => c.format==='both'?'PEM + PFX':c.format.toUpperCase();
+  const status = c => jobs.has(c.id)?'<span class="cp-status cp-pill cp-warn">● 正在签发</span>':c.status==='failed'?'<span class="cp-status cp-pill cp-bad">● 续期失败</span>':c.status==='new'?'<span class="cp-status cp-pill cp-warn">○ 待签发</span>':c.status==='due'?'<span class="cp-status cp-pill cp-warn">◷ 待续期</span>':'<span class="cp-status cp-pill cp-ok">● 有效</span>';
+  const files = c => {
+    const stem = c.path.replace(/[\\\/]+$/,'')+'\\'+c.base;
+    return [...(c.format!=='pfx'?[stem+'.crt',stem+'.fullchain.pem',stem+'.key']:[]),...(c.format!=='pem'?[stem+'.pfx']:[])];
+  };
+  function icons() { if(globalThis.lucide) globalThis.lucide.createIcons({attrs:{width:17,height:17}}); }
+  function toast(message) { const t=root.querySelector('.cp-toast');t.textContent=message;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true;},3600); }
+  function remember() {
+    if(window.openai?.setWidgetState) window.openai.setWidgetState({
+      modelContent:{screen:page,certificateCount:certs.length,prototype:true},
+      privateContent:{certs,credentials,logs:logs.slice(0,15),page,selected,web}
+    }).catch(()=>{});
+  }
+  function restore(state) {
+    const s=state?.privateContent;
+    if(!s || !Array.isArray(s.certs) || !Array.isArray(s.credentials) || !Array.isArray(s.logs)) return;
+    certs=s.certs;credentials=s.credentials;logs=s.logs;
+    selected=typeof s.selected==='string'?s.selected:null;
+    if(s.web && ['local','intranet'].includes(s.web.mode))web={...web,...s.web};
+    page=['certs','credentials','settings','activity','detail','webapi','webmonitor'].includes(s.page)?s.page:'certs';
+    if(page==='detail' && !certs.some(c=>c.id===selected))page='certs';
+  }
+  restore(window.openai?.widgetState);
+  window.addEventListener('openai:set_globals',event=>{
+    if(event.detail?.globals?.widgetState && jobs.size===0) {restore(event.detail.globals.widgetState);render();}
+  });
+  function head(title,subtitle,action='') {return `<div class="cp-head"><div><h1>${title}</h1><p>${subtitle}</p></div>${action}</div>`;}
+  function render() {
+    root.querySelectorAll('.cp-nav').forEach(n=>{const active=n.dataset.page===page || (page==='webmonitor' && n.dataset.page==='webapi');n.classList.toggle('active',active);if(active)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current');});
+    root.querySelector('.cp-count').textContent=certs.length;
+    if(page==='certs') list();
+    else if(page==='activity') activity();
+    else if(page==='credentials') credentialPage();
+    else if(page==='settings') settings();
+    else if(page==='detail') detail();
+    else if(page==='webapi') webApi();
+    else if(page==='webmonitor') webMonitor();
+    icons();
+  }
+  function list() {
+    const valid=certs.filter(c=>c.status!=='new' && days(c)>0).length;
+    const attention=certs.filter(c=>['due','failed','new'].includes(c.status)).length;
+    main.innerHTML=head('证书管理','集中管理域名证书，让续期在后台自动完成。',`<button class="cp-button cp-primary" data-action="new">${icon('plus')}新建证书</button>`)+
+      `<div class="cp-stats"><div class="cp-stat"><div class="cp-muted">托管证书${icon('files')}</div><b>${certs.length}</b><small>支持多域名与通配符</small></div><div class="cp-stat"><div class="cp-muted">当前有效${icon('shield-check')}</div><b>${valid}</b><small>按实际到期时间判断</small></div><div class="cp-stat"><div class="cp-muted">需要关注${icon('circle-alert')}</div><b>${attention}</b><small>待签发、待续期或失败</small></div></div>
+      <div class="cp-tablebox"><div class="cp-tabletop"><strong>全部证书 <span class="cp-muted">/ ${certs.length}</span></strong><span class="cp-status cp-ok">● 自动检查已启用</span></div>
+      ${certs.length?`<table class="cp-table"><thead><tr><th style="width:34%">名称 / 域名</th><th>状态</th><th class="cp-col-expiry">有效期至</th><th class="cp-col-format">输出格式</th><th style="width:58px">操作</th></tr></thead><tbody>${certs.map(c=>`<tr><td><button class="cp-link" data-action="detail" data-id="${esc(c.id)}"><strong>${esc(c.name)}</strong></button><span>${esc(c.domains[0])}${c.domains.length>1?`<br>+ ${c.domains.length-1} 个域名`:''}</span></td><td>${status(c)}<br><span class="cp-muted">${c.auto?'自动续期':'续期已暂停'}</span></td><td class="cp-col-expiry">${c.expires||'—'}<br><span class="cp-muted">${c.expires?'剩余 '+days(c)+' 天':'尚未签发'}</span></td><td class="cp-col-format">${formatLabel(c)}</td><td><button class="cp-link" data-action="detail" data-id="${esc(c.id)}">管理</button></td></tr>`).join('')}</tbody></table>`:'<div class="cp-empty">还没有证书。点击“新建证书”开始配置。</div>'}</div>
+      <div class="cp-info">${icon('info')}<div>界面关闭，守护继续。<br><span>后台服务独立运行；续期时间优先遵循 CA 建议，并按证书实际有效期兜底。</span></div></div>
+      <div class="cp-foot"><span>颁发机构：Let's Encrypt</span><span>示例时间：2026-11-16 · 本机时区</span></div>`;
+  }
+  function detail() {
+    const c=certs.find(c=>c.id===selected);if(!c){page='certs';return list();}
+    const job=jobs.get(c.id);
+    const credential=credentials.find(x=>x.id===c.credential);
+    main.innerHTML=`<button class="cp-back" data-action="back">${icon('arrow-left')}全部证书</button>`+head(esc(c.name),c.domains.map(esc).join(' · '),`<button class="cp-button" data-action="edit" data-id="${esc(c.id)}" ${job?'disabled':''}>${icon('pencil')}编辑配置</button>`)+
+      `<div class="cp-stack"><section class="cp-panel"><div class="cp-head" style="margin-bottom:15px"><h3>证书状态</h3>${status(c)}</div><dl class="cp-detailgrid"><dt>域名</dt><dd>${c.domains.map(esc).join('<br>')}</dd><dt>联系邮箱</dt><dd>${esc(c.email)}</dd><dt>有效期至</dt><dd>${c.expires||'尚未签发'}</dd><dt>下次续期</dt><dd>${c.auto?esc(c.next||'首次签发后计算'):'已暂停'}</dd><dt>域名验证</dt><dd>${c.method==='dns'?'DNS-01 / '+esc(credential?.name||'请选择凭据'):'HTTP-01 / '+esc(c.webroot)}</dd><dt>自动续期</dt><dd>${c.auto?'已开启':'已暂停'}</dd><dt>密钥算法</dt><dd>${c.algorithm==='ec'?'ECDSA P-256':'RSA 2048'}</dd></dl>
+      ${job?`<div class="cp-info" role="status" aria-live="polite"><div style="width:100%">${esc(job.label)}（模拟）<div class="cp-progress"><span style="width:${job.progress}%"></span></div></div></div>`:''}
+      ${c.status==='failed'?'<div class="cp-error">DNS API 凭据已失效，自动续期暂未成功。请在“DNS 凭据”中修复网关账号，再重新签发。旧证书与文件保留。</div>':''}
+      <div class="cp-actions"><button class="cp-button" data-action="toggle" data-id="${esc(c.id)}">${c.auto?'暂停自动续期':'恢复自动续期'}</button><button class="cp-button cp-primary" data-action="issue" data-id="${esc(c.id)}" ${job?'disabled':''}>${icon('refresh-cw')}${c.status==='new'?'立即签发（模拟）':'立即续期（模拟）'}</button></div></section>
+      <section class="cp-panel"><h3>证书输出</h3><div class="cp-preview">${files(c).map(esc).join('<br>')}</div><p class="cp-muted" style="margin-top:12px">成功后更新约定文件；失败保留原文件。PFX 由服务加密保管密码。自动部署为后续可选模块。</p></section>
+      <div class="cp-actions"><button class="cp-button cp-danger" data-action="delete" data-id="${esc(c.id)}" ${job?'disabled':''}>移除托管配置</button></div></div>`;
+  }
+  function editor(id) {
+    const c=certs.find(c=>c.id===id) || {name:'',domains:[],email:'',path:'D:\\Certificates',base:'',format:'both',method:'dns',credential:credentials[0]?.id||'',webroot:'C:\\inetpub\\wwwroot',auto:true,algorithm:'rsa'};
+    page='editor';selected=id||null;
+    main.innerHTML=`<button class="cp-back" data-action="${id?'detail':'back'}" data-id="${esc(id||'')}">${icon('arrow-left')}${id?'证书详情':'全部证书'}</button>`+head(id?'编辑证书':'新建证书','配置将由后台服务保存并执行，管理界面无需保持打开。')+
+      `<form class="cp-form" novalidate><div class="cp-stack"><section class="cp-panel"><h3>基本信息</h3><div class="cp-fields">
+      <label class="cp-field">证书名称 *<input name="name" maxlength="80" value="${esc(c.name)}" placeholder="例如：官方网站" required></label>
+      <label class="cp-field">联系邮箱 *<input name="email" type="email" value="${esc(c.email)}" placeholder="ops@example.com" required></label>
+      <label class="cp-field cp-full">域名 *<textarea name="domains" placeholder="example.com&#10;www.example.com&#10;*.example.com" required>${esc(c.domains.join('\n'))}</textarea><small>每行一个域名，不包含 https:// 或端口；通配符不包含根域名，需分别添加。</small></label></div></section>
+      <section class="cp-panel"><h3>域名所有权验证</h3><div class="cp-fields">
+      <label class="cp-field">验证方式<select name="method"><option value="dns" ${c.method==='dns'?'selected':''}>DNS-01 · 支持通配符</option><option value="http" ${c.method==='http'?'selected':''}>HTTP-01 · 公网 80 端口</option></select></label>
+      <label class="cp-field cp-dns">DNS 凭据<select name="credential">${credentials.map(x=>`<option value="${esc(x.id)}" ${x.id===c.credential?'selected':''}>${esc(x.name)}${x.valid?'':' · 需修复'}</option>`).join('')}</select><small>在“DNS 凭据”中维护，可供多张证书共用。</small></label>
+      <label class="cp-field cp-http" hidden>站点根目录 *<input name="webroot" value="${esc(c.webroot)}" placeholder="C:\\inetpub\\wwwroot"><small>公网必须能访问该站点的 80 端口验证路径。</small></label></div></section>
+      <section class="cp-panel"><h3>保存与续期</h3><div class="cp-fields">
+      <label class="cp-field">证书保存目录 *<input name="path" value="${esc(c.path)}" required placeholder="D:\\Certificates\\website"><small>填写服务器本地绝对路径，服务将检查写入权限。</small></label>
+      <label class="cp-field">文件名称 *<input name="base" maxlength="64" value="${esc(c.base)}" required placeholder="website"><small>填写基础名称，不带扩展名。</small></label>
+      <label class="cp-field">输出格式<select name="format"><option value="both" ${c.format==='both'?'selected':''}>PEM + PFX</option><option value="pem" ${c.format==='pem'?'selected':''}>PEM · Nginx / Apache</option><option value="pfx" ${c.format==='pfx'?'selected':''}>PFX · IIS / Windows</option></select></label>
+      <label class="cp-field">密钥算法<select name="algorithm"><option value="rsa" ${c.algorithm==='rsa'?'selected':''}>RSA 2048 · 兼容优先</option><option value="ec" ${c.algorithm==='ec'?'selected':''}>ECDSA P-256</option></select></label>
+      <label class="cp-check cp-full"><input type="checkbox" name="auto" ${c.auto?'checked':''}>开启自动续期（CA 建议时间优先）</label>
+      <div class="cp-preview cp-full cp-filepreview"></div></div></section></div>
+      <div class="cp-error cp-formerror" role="alert" hidden></div>
+      <div class="cp-actions"><button type="button" class="cp-button" data-action="${id?'detail':'back'}" data-id="${esc(id||'')}">取消</button><button type="button" class="cp-button" data-save="save">仅保存配置</button><button type="button" class="cp-button cp-primary" data-save="issue">保存并签发（模拟）</button></div></form>`;
+    const form=main.querySelector('form');
+    const preview=()=>{
+      const v=Object.fromEntries(new FormData(form));
+      main.querySelector('.cp-dns').hidden=v.method!=='dns';main.querySelector('.cp-http').hidden=v.method!=='http';
+      main.querySelector('.cp-filepreview').innerHTML=files({...v,base:v.base||'证书名称'}).map(esc).join('<br>');
+    };
+    form.addEventListener('input',preview);form.addEventListener('change',preview);preview();
+    form.addEventListener('keydown',event=>{if(event.key==='Enter' && event.target.tagName==='INPUT'){event.preventDefault();form.querySelector('[data-save="save"]').click();}});
+    form.addEventListener('click',event=>{
+      const submitter=event.target.closest('[data-save]');if(!submitter)return;
+      event.preventDefault();
+      const v=Object.fromEntries(new FormData(form));v.auto=form.elements.auto.checked;
+      const domains=[...new Set(v.domains.split(/[\s,，]+/).filter(Boolean).map(x=>x.toLowerCase().replace(/\.$/,'')))];
+      let error='';
+      const validDomain=s=>s.length<=253 && /^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(s);
+      if(!v.name.trim()) error='请填写证书名称。';
+      else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) error='请填写有效的联系邮箱。';
+      else if(!domains.length || domains.some(x=>!validDomain(x))) error='域名格式不正确。请使用完整域名，不含协议、路径、端口；国际化域名请先填写 Punycode。';
+      else if(domains.length>100) error='一张证书最多添加 100 个域名。';
+      else if(v.method==='http' && domains.some(x=>x.startsWith('*.'))) error='通配符证书必须使用 DNS-01 验证。';
+      else if(v.method==='dns' && !credentials.find(x=>x.id===v.credential)?.valid) error='请选择有效的 DNS 凭据；失效凭据需先修复。';
+      else if(!/^[a-z]:\\[^<>:"|?*]*$/i.test(v.path) || /(?:^|\\)\.\.(?:\\|$)/.test(v.path)) error='请填写有效的 Windows 本地绝对路径，例如 D:\\Certificates\\website。';
+      else if(!v.base.trim() || /[<>:"/\\|?*.\s]$|[<>:"/\\|?*]/.test(v.base) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(v.base) || /\.[a-z0-9]{2,5}$/i.test(v.base)) error='文件名称不能包含扩展名、路径分隔符、Windows 保留名称或非法字符。';
+      else if(v.method==='http' && !/^[a-z]:\\[^<>:"|?*]*$/i.test(v.webroot)) error='请填写有效的站点根目录。';
+      const candidate={...v,domains,name:v.name.trim(),base:v.base.trim(),path:v.path.trim()};
+      const targets=files(candidate).map(x=>x.toLowerCase());
+      if(!error && certs.some(x=>x.id!==id && files(x).some(f=>targets.includes(f.toLowerCase())))) error='输出文件与另一张证书冲突，请更换保存目录或文件名称。';
+      if(error){const el=main.querySelector('.cp-formerror');el.textContent=error;el.hidden=false;return;}
+      const existing=certs.find(x=>x.id===id);
+      const changed=existing && JSON.stringify(existing.domains)!==JSON.stringify(domains);
+      const saved={...existing,...candidate,id:id||'c'+Date.now(),status:changed?'new':existing?.status||'new',expires:existing?.expires||'',next:changed?'域名已变更，等待重新签发':existing?.next||''};
+      if(id)certs=certs.map(x=>x.id===id?saved:x);else certs.push(saved);
+      selected=saved.id;page='detail';render();remember();toast('配置已保存（仅原型状态）');
+      if(submitter.dataset.save==='issue')issue(saved.id);
+    });
+    icons();
+  }
+  function activity() {
+    main.innerHTML=head('任务记录','查看签发、续期和配置操作的执行结果。')+`<section class="cp-panel"><h3>最近活动 <span class="cp-muted">/ 全部为模拟记录</span></h3><ul class="cp-timeline">${logs.map(l=>`<li><span class="cp-eventicon ${l.bad?'cp-bad':''}">${icon(l.bad?'circle-alert':'circle-check')}</span><div class="cp-eventbody"><strong>${esc(l.name)}</strong><p>${esc(l.message)}</p><time>${esc(l.time)}</time></div>${l.bad?'<span class="cp-status cp-pill cp-bad">失败</span>':''}</li>`).join('')}</ul></section>`;
+  }
+  function credentialPage() {
+    main.innerHTML=head('DNS 凭据','验证域名控制权，为通配符签发和无人值守续期提供授权。')+
+      `<section class="cp-panel"><h3>已连接的账号</h3>${credentials.map(c=>`<div class="cp-credential"><div><strong>${esc(c.name)}</strong><p>${esc(c.provider)} · ${c.valid?'凭据引用已保存':'凭据已失效'}</p></div><div style="display:flex;gap:12px;align-items:center">${c.valid?'<span class="cp-status cp-pill cp-ok">● 可用</span>':`<button class="cp-button" data-action="repair" data-id="${esc(c.id)}">修复（模拟）</button>`}</div></div>`).join('')}</section>
+      <section class="cp-panel" style="margin-top:18px"><h3>新增凭据</h3><form class="cp-credform"><div class="cp-fields"><label class="cp-field">凭据名称<input name="label" required placeholder="例如：生产环境 DNS"></label><label class="cp-field">DNS 服务商<select name="provider"><option>Cloudflare</option><option>阿里云 DNS</option><option>腾讯云 DNSPod</option></select></label><label class="cp-field cp-full">演示授权码<input name="demo" required autocomplete="off" placeholder="请输入 DEMO_ONLY"><small>此处只接受 DEMO_ONLY，请勿输入真实 Token。正式版按服务商显示所需密钥字段。</small></label></div><div class="cp-error cp-crederror" hidden role="alert"></div><div class="cp-actions"><button class="cp-button cp-primary cp-savecred" type="button">保存凭据（模拟）</button></div></form></section>
+      <div class="cp-info">${icon('lock-keyhole')}<span>正式版由后台服务加密保管密钥，界面只显示凭据名称与状态；建议使用最小 DNS 修改权限。</span></div>`;
+    const credentialForm=main.querySelector('form');
+    credentialForm.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();credentialForm.querySelector('button').click();}});
+    main.querySelector('.cp-savecred').addEventListener('click',e=>{
+      e.preventDefault();const v=Object.fromEntries(new FormData(credentialForm));
+      if(v.demo!=='DEMO_ONLY' || !v.label.trim()){const err=main.querySelector('.cp-crederror');err.textContent='请填写名称，并仅使用演示授权码 DEMO_ONLY。';err.hidden=false;return;}
+      credentials.push({id:'cred'+Date.now(),name:v.label.trim(),provider:v.provider,valid:true});
+      render();remember();toast('演示凭据已添加，创建证书时可选用');
+    });
+  }
+  function settings() {
+    main.innerHTML=head('服务设置','后台服务独立于桌面管理端运行。')+
+      `<div class="cp-stack"><section class="cp-panel"><div class="cp-head"><h3>Windows 系统服务</h3><span class="cp-status cp-pill cp-ok">● 运行中（模拟）</span></div><dl class="cp-detailgrid"><dt>服务名称</dt><dd>CertPilot.Service</dd><dt>启动类型</dt><dd>自动</dd><dt>运行身份</dt><dd>NT SERVICE\\CertPilot.Service（拟定）</dd><dt>异常恢复</dt><dd>进程异常退出后，按恢复策略重新启动</dd><dt>配置位置</dt><dd>C:\\ProgramData\\CertPilot\\data\\certpilot.db</dd><dt>管理连接</dt><dd>本机 Windows 命名管道 · 管理员授权</dd></dl></section>
+      <section class="cp-panel"><h3>续期策略</h3><dl class="cp-detailgrid"><dt>本地任务扫描</dt><dd>每 15 分钟；启动时补查遗漏任务</dd><dt>CA 建议时间</dt><dd>ARI 可用时每日检查至少两次</dd><dt>兜底窗口</dt><dd>剩余有效期约 1/3 时；不足 10 天的证书按 1/2</dd><dt>失败处理</dt><dd>指数退避，遵循 Retry-After，保留旧证书</dd><dt>到期告警</dt><dd>计划支持 SMTP 通知及 Windows 事件日志</dd></dl></section>
+      <section class="cp-panel"><div class="cp-head"><h3>Web 与 API</h3><span class="cp-status cp-pill cp-ok">● 同步运行（模拟）</span></div><p class="cp-muted">服务同时托管浏览器管理页与 REST API。桌面端关闭后仍可访问。</p><div class="cp-preview" style="margin-top:12px">${esc(webOrigin())}</div><div class="cp-actions"><button class="cp-button" data-page="webapi">管理 Web 与 API</button></div></section>
+      <div class="cp-info">${icon('monitor-off')}<span>点击窗口右上角“×”体验关闭管理端。重新打开后，已有配置仍然可见。</span></div></div>`;
+  }
+  function webApi() {
+    main.innerHTML=head('Web 与 API','一个后台服务，同时支持桌面、浏览器和你的前端项目。',`<button class="cp-button cp-primary" data-page="webmonitor">${icon('monitor')}浏览器监控预览</button>`)+
+      `<div class="cp-access"><span class="cp-status cp-pill cp-ok">● Worker 运行中</span><span class="cp-status cp-pill cp-ok">● Web 运行中</span><span class="cp-muted">演示状态 · 未启动真实监听</span></div>
+      <div class="cp-stack"><section class="cp-panel"><h3>访问设置</h3><form class="cp-webform"><div class="cp-fields">
+      <label class="cp-field">监听范围<select name="mode"><option value="local" ${web.mode==='local'?'selected':''}>仅本机 · 默认</option><option value="intranet" ${web.mode==='intranet'?'selected':''}>指定内网 IP</option></select></label>
+      <label class="cp-field">HTTPS 端口<input name="port" type="number" min="1024" max="65535" value="${esc(web.port)}"></label>
+      <label class="cp-field cp-remote">本机内网 IP<input name="ip" value="${esc(web.ip)}"><small>正式版检查网卡和防火墙来源范围。</small></label>
+      <label class="cp-field cp-remote">浏览器访问域名<input name="hostname" value="${esc(web.hostname)}"><small>需解析到此服务器，并与管理证书匹配。</small></label>
+      <label class="cp-check cp-full cp-remote"><input name="trusted" type="checkbox" ${web.trusted?'checked':''}>已配置客户端信任的管理证书（模拟确认）</label></div>
+      <div class="cp-preview cp-webaddress" style="margin-top:16px"></div>
+      <div class="cp-error cp-weberror" role="alert" hidden></div><div class="cp-actions"><button class="cp-button cp-primary cp-saveweb" type="button">保存访问配置（模拟）</button></div></form></section>
+      <section class="cp-panel"><h3>API 接入预览</h3><div class="cp-fields">
+      <label class="cp-field">请求<select class="cp-apiendpoint"><option value="certificates">GET /api/v1/certificates</option><option value="system/status">GET /api/v1/system/status</option></select></label>
+      <label class="cp-field">调用身份<select class="cp-apiidentity"><option value="read">已授权的只读集成（模拟）</option><option value="none">未提供凭据</option></select></label></div>
+      <div class="cp-actions"><button class="cp-button" data-action="apiquery">${icon('play')}执行查询（模拟）</button></div>
+      <div class="cp-apioutput" role="status" aria-live="polite">${apiResult?apiOutput():''}</div>
+      <p class="cp-muted" style="margin-top:14px">正式版：OpenAPI 文档、异步任务、权限范围与 Token 撤销。长期 Token 保存在集成项目后端；页面不收集真实密钥。</p></section></div>
+      <div class="cp-info">${icon('lock-keyhole')}<span>人员账号区分查看、操作和管理权限。远程访问需显式配置 HTTPS；此页保存只改变原型，不开放服务器端口。</span></div>`;
+    const form=main.querySelector('.cp-webform');
+    const update=()=>{
+      const v=Object.fromEntries(new FormData(form));
+      main.querySelectorAll('.cp-remote').forEach(el=>el.hidden=v.mode!=='intranet');
+      main.querySelector('.cp-webaddress').textContent=`拟用入口：https://${v.mode==='local'?'localhost':v.hostname}:${v.port}`;
+    };
+    form.addEventListener('change',update);form.addEventListener('input',update);
+    form.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();main.querySelector('.cp-saveweb').click();}});
+    update();
+    main.querySelector('.cp-saveweb').addEventListener('click',()=>{
+      const v=Object.fromEntries(new FormData(form));v.trusted=form.elements.trusted.checked;
+      let error='';
+      if(!/^\d+$/.test(v.port) || Number(v.port)<1024 || Number(v.port)>65535)error='请填写 1024–65535 范围内的端口。';
+      const ip=v.ip.split('.').map(Number);
+      const privateIp=ip.length===4 && ip.every(n=>Number.isInteger(n)&&n>=0&&n<=255) && (ip[0]===10 || (ip[0]===172 && ip[1]>=16 && ip[1]<=31) || (ip[0]===192 && ip[1]===168));
+      if(!error && v.mode==='intranet' && !privateIp)error='演示中请填写有效的 IPv4 内网地址。正式版还需核实该地址属于本机网卡。';
+      if(!error && v.mode==='intranet' && !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(v.hostname))error='请填写管理证书对应的访问域名，不包含协议、端口或路径。';
+      if(!error && v.mode==='intranet' && !v.trusted)error='启用内网访问前，需要配置客户端信任且与访问域名匹配的管理证书。';
+      if(error){const el=main.querySelector('.cp-weberror');el.textContent=error;el.hidden=false;return;}
+      web=v;remember();toast('访问配置已模拟保存，未更改真实监听或防火墙');render();
+    });
+  }
+  function apiOutput() {
+    return `<span class="cp-status cp-pill ${apiResult.status===200?'cp-ok':'cp-bad'}">HTTP ${apiResult.status} · 模拟响应</span><pre class="cp-preview cp-json">${esc(JSON.stringify(apiResult.body,null,2))}</pre>`;
+  }
+  function apiQuery() {
+    const path=main.querySelector('.cp-apiendpoint').value;
+    const authenticated=main.querySelector('.cp-apiidentity').value==='read';
+    apiResult=!authenticated?{status:401,body:{title:'需要身份认证',status:401,code:'UNAUTHENTICATED',traceId:'demo-request'}}:
+      path==='certificates'?{status:200,body:{items:certs.map(c=>({
+        id:c.id,name:c.name,domains:c.domains,autoRenew:c.auto,
+        certificate:{status:c.status==='new'?'notIssued':'valid',notAfterUtc:c.expires?c.expires+'T00:00:00Z':null,domains:c.domains},
+        renewal:{status:c.auto?(c.status==='failed'?'failed':'scheduled'):'paused',nextAttemptAtUtc:/^\d{4}-\d{2}-\d{2}$/.test(c.next)?c.next+'T00:00:00Z':null}
+      })),nextCursor:null}}:{status:200,body:{service:'CertPilot.Service',worker:{status:'running'},web:{status:'running',origin:webOrigin()},mode:'prototype'}};
+    main.querySelector('.cp-apioutput').innerHTML=apiOutput();
+  }
+  function webMonitor() {
+    main.innerHTML=`<button class="cp-back" data-page="webapi">${icon('arrow-left')}Web 与 API</button>`+
+      head('浏览器监控','浏览器、桌面端与 API 共用同一批证书和任务。')+
+      `<div class="cp-access"><span class="cp-status cp-pill cp-ok">● Web 已连接（模拟）</span><span class="cp-muted">演示账号：Operator · ${esc(webOrigin())}</span></div>
+      <section class="cp-tablebox"><div class="cp-tabletop"><strong>托管证书</strong><span class="cp-muted">${certs.length} 张</span></div><table class="cp-table"><thead><tr><th style="width:42%">名称 / 域名</th><th>状态</th><th>有效期至</th></tr></thead><tbody>${certs.map(c=>`<tr><td><strong>${esc(c.name)}</strong><span>${esc(c.domains[0])}</span></td><td>${status(c)}</td><td>${c.expires||'尚未签发'}</td></tr>`).join('')}</tbody></table></section>
+      <section class="cp-panel" style="margin-top:18px"><h3>站点证书检测</h3><label class="cp-field">检测目标<select class="cp-inspecttarget" ${inspecting?'disabled':''}>${certs.flatMap(c=>c.domains.filter(d=>!d.startsWith('*.')).map(d=>`<option value="${esc(c.id+'|'+d)}" ${inspectTarget===c.id+'|'+d?'selected':''}>${esc(c.name+' · '+d+':443')}</option>`)).join('')}</select><small>仅检查已托管的具体域名；由服务器发起 TLS 连接，区别于本地证书文件状态。</small></label>
+      <div class="cp-actions"><button class="cp-button cp-primary" data-action="inspect" ${inspecting || !certs.some(c=>c.domains.some(d=>!d.startsWith('*.')))?'disabled':''}>${icon('scan-line')}${inspecting?'检测中（模拟）':'运行检测（模拟）'}</button></div>
+      <div class="cp-inspectresult" role="status" aria-live="polite">${inspection?`<div class="cp-info">${icon('info')}<span>${esc(inspection.target)} · ${esc(inspection.name)}<br>${inspection.mismatch?'TLS 可连接，但网站仍呈现旧证书，与托管版本指纹不一致。':'TLS 可连接；域名、证书链和托管版本指纹匹配。'}<br>检测位置：服务器 · 示例时间：2026-11-16 · 未发起真实连接</span></div>`:''}</div></section>
+      <div class="cp-info">${icon('info')}<span>此处为已登录的浏览器页面预览，未实现真实登录或网络检测。正式版显示观测时间、目标节点与完整错误原因。</span></div>`;
+    main.querySelector('.cp-inspecttarget').addEventListener('change',event=>{inspectTarget=event.target.value;inspection=null;main.querySelector('.cp-inspectresult').innerHTML='';});
+  }
+  async function inspect() {
+    if(inspecting)return;
+    inspectTarget=main.querySelector('.cp-inspecttarget').value;
+    const [id,target]=inspectTarget.split('|');
+    if(!id || !target)return;
+    inspecting=true;inspection=null;webMonitor();icons();
+    await new Promise(resolve=>setTimeout(resolve,700));
+    inspection={target,name:certs.find(c=>c.id===id)?.name||'',mismatch:id==='c3'};
+    inspecting=false;if(page==='webmonitor'){render();}
+  }
+  async function issue(id) {
+    const c=certs.find(x=>x.id===id);if(!c || jobs.has(id))return;
+    const credential=credentials.find(x=>x.id===c.credential);
+    if(c.method==='dns' && !credential?.valid) {toast('DNS 凭据失效，请先到“DNS 凭据”修复');return;}
+    const stages=['创建 ACME 订单','准备域名验证','等待验证通过','生成并检查证书','更新证书文件'];
+    jobs.set(id,{label:stages[0],progress:0});
+    selected=id;page='detail';render();
+    for(let i=0;i<stages.length;i++){
+      jobs.set(id,{label:stages[i],progress:(i+1)*20});
+      if(page==='detail' && selected===id){render();}
+      await new Promise(resolve=>setTimeout(resolve,450));
+    }
+    c.status='valid';c.expires='2027-02-14';c.next='2027-01-15';jobs.delete(id);
+    logs.unshift({name:c.name,message:'模拟签发成功，已计算下一次续期时间。未连接 CA，也未写入证书文件。',time:'2026-11-16 · 刚刚'});
+    render();remember();toast('模拟签发完成，未产生真实证书');
+  }
+  root.addEventListener('click',e=>{
+    const nav=e.target.closest('[data-page]');if(nav){page=nav.dataset.page;render();remember();return;}
+    if(e.target.closest('.cp-openmonitor')){root.querySelector('.cp-shell').hidden=false;root.querySelector('.cp-titlebar').hidden=false;root.querySelector('.cp-closed').hidden=true;page='webmonitor';render();return;}
+    if(e.target.closest('.cp-exit')){root.querySelector('.cp-shell').hidden=true;root.querySelector('.cp-titlebar').hidden=true;root.querySelector('.cp-closed').hidden=false;return;}
+    if(e.target.closest('.cp-reopen')){root.querySelector('.cp-shell').hidden=false;root.querySelector('.cp-titlebar').hidden=false;root.querySelector('.cp-closed').hidden=true;render();return;}
+    const button=e.target.closest('[data-action]');if(!button || button.disabled)return;
+    const {action,id}=button.dataset;
+    if(action==='new')return editor();
+    if(action==='apiquery')return apiQuery();
+    if(action==='inspect')return inspect();
+    if(action==='edit')return editor(id);
+    if(action==='back'){page='certs';render();}
+    if(action==='detail'){selected=id;page='detail';render();}
+    if(action==='issue')issue(id);
+    if(action==='toggle'){const c=certs.find(x=>x.id===id);if(c){c.auto=!c.auto;render();remember();}}
+    if(action==='repair'){const c=credentials.find(x=>x.id===id);if(c){c.valid=true;render();remember();toast('模拟凭据已修复，可返回证书详情重试续期');}}
+    if(action==='delete'){
+      main.innerHTML=head('移除托管配置','此操作停止后续托管；已生成证书文件保留，证书不会被吊销。')+
+        `<section class="cp-panel"><h3>${esc(certs.find(c=>c.id===id)?.name)}</h3><p class="cp-muted">确认后可重新新建配置。此处为原型操作。</p><div class="cp-actions"><button class="cp-button" data-action="detail" data-id="${esc(id)}">取消</button><button class="cp-button cp-danger" data-action="confirmdelete" data-id="${esc(id)}">确认移除</button></div></section>`;
+    }
+    if(action==='confirmdelete'){certs=certs.filter(c=>c.id!==id);page='certs';render();remember();toast('已移除托管配置（模拟）');}
+  });
+  render();
+  if(globalThis.Tweak){
+    const design={radius:14,density:'标准'};
+    const tweak=new Tweak({container:root,onChange:()=>{
+      root.querySelector('.cp-window').style.borderRadius=design.radius+'px';
+      main.style.padding=design.density==='紧凑'?'18px':'28px';
+    }});
+    tweak.addSlider(design,'radius',{label:'窗口圆角',min:0,max:20,step:2,unit:'px'});
+    tweak.addSelect(design,'density',{label:'内容密度',options:['标准','紧凑']});
+  }
+})();
+</script>
