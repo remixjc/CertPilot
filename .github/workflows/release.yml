@@ -1,24 +1,39 @@
 name: Release
 on:
   push:
-    tags: ['v*.*.*']
+    tags:
+      - 'v*.*.*'
 permissions:
   contents: write
 jobs:
   publish:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: '10.0.x' }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
-      - run: npm ci --prefix web
-      - run: npm run build --prefix web
-      - run: dotnet restore CertPilot.sln --locked-mode
-      - run: dotnet test CertPilot.sln --configuration Release --no-restore
-      - run: dotnet publish src/CertPilot.Service/CertPilot.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ github.ref_name }} -o artifacts/CertPilot-win-x64
-      - shell: pwsh
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build web
+        run: npm ci --prefix web && npm run build --prefix web
+      - name: Restore
+        run: dotnet restore CertPilot.sln --locked-mode
+      - name: Test
+        run: dotnet test CertPilot.sln --configuration Release --no-restore
+      - name: Publish Windows x64
+        run: dotnet publish src/CertPilot.Service/CertPilot.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ github.ref_name }} -o artifacts/CertPilot-win-x64
+      - name: Create archive
+        shell: pwsh
         run: Compress-Archive -Path artifacts/CertPilot-win-x64/* -DestinationPath artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip
-      - uses: softprops/action-gh-release@v2
-        with: { generate_release_notes: true, files: artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip }
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip
