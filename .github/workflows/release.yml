@@ -28,7 +28,7 @@ jobs:
       - name: Test
         run: dotnet test CertPilot.sln --configuration Release --no-restore
       - name: Publish Windows x64
-        run: dotnet publish src/CertPilot.Service/CertPilot.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ github.ref_name }} -o artifacts/CertPilot-win-x64
+        run: dotnet publish src/CertPilot.Service/CertPilot.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=0.1.0 -o artifacts/CertPilot-win-x64
       - name: Create archive
         shell: pwsh
         run: Compress-Archive -Path artifacts/CertPilot-win-x64/* -DestinationPath artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip
