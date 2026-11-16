@@ -9,31 +9,40 @@ jobs:
   publish:
     runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
       - name: Build web
         run: npm ci --prefix web && npm run build --prefix web
-      - name: Restore
-        run: dotnet restore CertPilot.sln --locked-mode
-      - name: Test
-        run: dotnet test CertPilot.sln --configuration Release --no-restore
-      - name: Publish Windows x64
-        run: dotnet publish src/CertPilot.Service/CertPilot.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=0.1.0 -o artifacts/CertPilot-win-x64
-      - name: Create archive
+      - run: dotnet restore CertPilot.sln --locked-mode
+      - run: dotnet test tests/CertPilot.Tests/CertPilot.Tests.csproj -c Release --no-restore
+      - name: Publish desktop and service
         shell: pwsh
-        run: Compress-Archive -Path artifacts/CertPilot-win-x64/* -DestinationPath artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        run: ./scripts/publish-windows.ps1 -Version '${{ github.ref_name }}'
+      - name: Verify installed package
+        shell: pwsh
+        run: ./scripts/test-windows-package.ps1 -PackageDirectory ./artifacts/CertPilot-win-x64
+      - name: Upload validation evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Windows-validation
+          path: artifacts/smoke-evidence
+      - name: Archive complete package
+        shell: pwsh
+        run: |
+          $archive = 'artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip'
+          Compress-Archive -Path artifacts/CertPilot-win-x64/* -DestinationPath $archive
+          (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + (Split-Path $archive -Leaf) | Set-Content "$archive.sha256" -Encoding ASCII
+      - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip
+          files: |
+            artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip
+            artifacts/CertPilot-${{ github.ref_name }}-win-x64.zip.sha256

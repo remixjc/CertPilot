@@ -1,9 +1,8 @@
 using CertPilot;
-using Microsoft.Extensions.Hosting.WindowsServices;
 
 var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
 {
-    Args = args, ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : Directory.GetCurrentDirectory()
+    Args = args, ContentRootPath = AppContext.BaseDirectory
 });
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true).AddEnvironmentVariables().AddCommandLine(args);
 var options = builder.Configuration.GetSection("CertPilot").Get<PilotOptions>() ?? new();

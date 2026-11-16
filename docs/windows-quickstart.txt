@@ -1,0 +1,31 @@
+CertPilot v0.1.1 — Windows 原生 WPF 管理端 + 后台服务
+
+1. 将 ZIP 完整解压到本机目录，不要只复制 EXE，也不要直接在压缩软件中运行。
+2. 双击根目录 CertPilot.exe：这才是原生 WPF 图形管理端，无控制台窗口。
+3. 在登录页点击“安装 / 更新本机服务”，确认后安装到 Program Files\CertPilot，
+   注册自动启动服务并创建桌面 / 开始菜单快捷方式。也可运行“安装服务.cmd”。
+4. 服务默认地址 https://localhost:8443。数据默认位于 C:\ProgramData\CertPilot。
+   点击“读取初始账号”再登录，首次必须设置新密码。
+5. 在 DNS 凭据中添加 Cloudflare Token；新建证书、保存配置后明确发起申请。
+   建议先使用 Staging。已签发文件的输出路径与实际证书信息在“查看详情”中显示。
+6. 关闭 WPF 窗口不停止服务。需要停止时到“本机服务与连接”页操作。
+
+发布包：
+  CertPilot.exe                      原生 WPF 管理界面（需管理员权限）
+  service\CertPilot.Service.exe      后台 Windows 服务（不是桌面入口）
+  service\wwwroot\                   Web 管理端静态资源
+  service\appsettings.json           默认服务设置
+  scripts\install-service.ps1        安装 / 更新服务及快捷方式
+  scripts\uninstall-service.ps1      卸载服务，保留配置与证书
+  安装服务.cmd                       提升权限执行安装脚本
+
+管理员说明：
+- service\CertPilot.Service.exe 直接双击会以前台服务宿主运行，出现控制台是预期行为。
+  正常使用由系统服务管理器启动它；请通过 CertPilot.exe 打开图形界面。
+- 安装程序默认保护数据目录，仅 SYSTEM 和 Administrators 可访问。
+- 默认本机生成的管理证书未添加到系统信任库；WPF 仅对本机连接固定匹配实例证书。
+  浏览器管理需由管理员为管理入口配置可信证书。
+- 自定义服务器地址、数据目录须在 WPF 登录页对应填写。目录选择属于服务器，远程
+  连接不提供本地文件夹浏览。Webroot / 输出根目录须先在服务配置中授权。
+- IIS / Nginx 自动绑定尚未实现，证书签发后需部署到网站。真实 ACME 签发需要域名
+  公网验证条件和授权，不能以 WPF 构建 / 冒烟测试通过代替实际域名验收。

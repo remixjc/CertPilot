@@ -15,4 +15,7 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="wwwroot/**/*;appsettings*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true" />
+  </ItemGroup>
 </Project>
