@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '0.1.1',
+    [string]$Version = '0.1.2',
     [string]$OutputDirectory = (Join-Path $PSScriptRoot '..\artifacts\CertPilot-win-x64')
 )
 $ErrorActionPreference = 'Stop'

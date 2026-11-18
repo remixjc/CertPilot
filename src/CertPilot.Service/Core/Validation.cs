@@ -32,10 +32,18 @@ public static partial class ConfigValidation
         if (input.Validation == "http" && domains.Any(d => d.StartsWith("*."))) throw Invalid("通配符必须使用 DNS-01。");
         if (input.Validation == "dns" && string.IsNullOrWhiteSpace(input.CredentialId)) throw Invalid("请选择 DNS 凭据。");
         ValidateFileName(input.FileName);
-        var output = SafePath(input.OutputDirectory, [options.EffectiveOutputRoot, .. options.OutputRoots]);
+        var output = ValidateDirectory(input.OutputDirectory, [options.EffectiveOutputRoot, .. options.OutputRoots],
+            "OUTPUT_DIRECTORY_INVALID", "证书保存目录", "请使用服务默认保存目录，或请管理员在 OutputRoots 中登记所需目录。");
+        var webRoot = input.WebRoot;
         if (input.Validation == "http")
-            SafePath(input.WebRoot ?? "", options.WebRoots);
-        return input with { Name = input.Name.Trim(), Domains = domains, OutputDirectory = output };
+            webRoot = ValidateDirectory(input.WebRoot ?? "", options.WebRoots, "WEB_ROOT_INVALID", "HTTP-01 网站根目录",
+                options.WebRoots.Length == 0 ? "服务尚未配置 WebRoots，请管理员登记实际网站根目录。" : "请选择 WebRoots 允许的网站目录。");
+        return input with { Name = input.Name.Trim(), Domains = domains, OutputDirectory = output, WebRoot = webRoot };
+    }
+    private static string ValidateDirectory(string? path, string[] roots, string code, string label, string guidance)
+    {
+        try { return SafePath(path?.Trim() ?? "", roots); }
+        catch (PilotException exception) { throw new PilotException(422, code, $"{label}：{exception.Message}{guidance}"); }
     }
     public static void ValidateFileName(string name)
     {
@@ -46,13 +54,17 @@ public static partial class ConfigValidation
     }
     public static string SafePath(string candidate, IEnumerable<string> roots)
     {
-        if (string.IsNullOrWhiteSpace(candidate) || !Path.IsPathFullyQualified(candidate) || candidate.StartsWith(@"\\", StringComparison.Ordinal))
+        if (string.IsNullOrWhiteSpace(candidate) || !Path.IsPathFullyQualified(candidate) ||
+            (OperatingSystem.IsWindows() && (candidate.StartsWith(@"\\", StringComparison.Ordinal) || candidate.StartsWith("//", StringComparison.Ordinal))))
             throw Invalid("只允许服务器本地绝对路径。");
-        var full = Path.GetFullPath(candidate);
+        string full;
+        try { full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidate)); }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        { throw Invalid("路径格式无效。"); }
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!roots.Select(Path.GetFullPath).Any(root => full.Equals(root.TrimEnd(Path.DirectorySeparatorChar), comparison) ||
             full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, comparison)))
-            throw Invalid("目录不在管理员允许的根目录内，请在服务器配置 OutputRoots / WebRoots。");
+            throw Invalid("不在服务允许的目录范围内。");
         if (OperatingSystem.IsWindows())
         for (var dir = new DirectoryInfo(full); dir is not null; dir = dir.Parent)
             if (dir.Exists && (dir.Attributes & FileAttributes.ReparsePoint) != 0)

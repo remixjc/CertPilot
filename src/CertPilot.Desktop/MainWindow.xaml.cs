@@ -230,7 +230,14 @@ public partial class MainWindow : Window
         await connected.RefreshCsrf();
         var info = await connected.Get<SystemInfo>("system/status");
         var c = await connected.Write<CredentialItem>("credentials", HttpMethod.Post, new { name = "Smoke DNS", zoneId = new string('a', 32), zoneName = "example.com", token = "fake-smoke-token-never-used-for-issuance" });
-        var created = await connected.Write<CertificateItem>("certificates", HttpMethod.Post, new CertificateInput("Smoke Certificate", ["example.com"], "smoke@example.com", "staging", "dns", c.Id, null, info.OutputRoots[0], "smoke", "both", false, false));
+        var input = new CertificateInput("Smoke Certificate", ["example.com"], "smoke@example.com", "staging", "dns", c.Id, null, info.OutputRoots[0], "smoke", "both", false, false);
+        try
+        {
+            await connected.Write<CertificateItem>("certificates", HttpMethod.Post, input with { OutputDirectory = input.OutputDirectory + "-outside" });
+            throw new InvalidOperationException("An unauthorized output directory was accepted.");
+        }
+        catch (PilotClientException exception) when (exception.Code == "OUTPUT_DIRECTORY_INVALID") { }
+        var created = await connected.Write<CertificateItem>("certificates", HttpMethod.Post, input);
         client = connected; user = await connected.Get<UserInfo>("auth/me");
         ShowWorkspace(); await Refresh(); App.SaveScreenshot(this, "desktop-certificates.png");
         var updated = await connected.Write<CertificateItem>("certificates/" + created.Id, HttpMethod.Put, created.Input(true), created.Revision);

@@ -9,6 +9,7 @@ public sealed class FormDialog : Window
 {
     private readonly StackPanel fields = new();
     private readonly TextBlock error = new() { Foreground = System.Windows.Media.Brushes.IndianRed, Margin = new Thickness(0, 0, 0, 12) };
+    private readonly Dictionary<string, TextBlock> fieldErrors = new();
     private readonly Button save;
     public Func<Task>? Submit { get; set; }
     public FormDialog(Window owner, string title, int width = 600)
@@ -24,8 +25,16 @@ public sealed class FormDialog : Window
         save.Click += async (_, _) =>
         {
             save.IsEnabled = false; error.Text = "";
+            foreach (var fieldError in fieldErrors.Values) fieldError.Visibility = Visibility.Collapsed;
             try { if (Submit is not null) await Submit(); DialogResult = true; }
-            catch (Exception e) { error.Text = e.Message; }
+            catch (Exception e)
+            {
+                var target = e is PilotClientException { Code: { } code } && fieldErrors.TryGetValue(code, out var fieldError)
+                    ? fieldError : error;
+                target.Text = e.Message;
+                target.Visibility = Visibility.Visible;
+                await Dispatcher.InvokeAsync(target.BringIntoView, System.Windows.Threading.DispatcherPriority.Loaded);
+            }
             finally { save.IsEnabled = true; }
         };
         buttons.Children.Add(cancel); buttons.Children.Add(save); DockPanel.SetDock(buttons, Dock.Bottom); layout.Children.Add(buttons);
@@ -49,9 +58,18 @@ public sealed class FormDialog : Window
         browse.Click += (_, _) =>
         {
             var dialog = new OpenFolderDialog { Title = label, Multiselect = false };
+            if (System.IO.Directory.Exists(field.Text)) dialog.InitialDirectory = field.Text;
             if (dialog.ShowDialog(this) == true) field.Text = dialog.FolderName;
         };
         DockPanel.SetDock(browse, Dock.Right); row.Children.Add(browse); row.Children.Add(field); fields.Children.Add(row); return field;
+    }
+    public void DirectoryError(TextBox field, string code)
+    {
+        var message = new TextBlock { Foreground = System.Windows.Media.Brushes.IndianRed,
+            Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
+        fieldErrors.Add(code, message);
+        field.TextChanged += (_, _) => message.Visibility = Visibility.Collapsed;
+        fields.Children.Add(message);
     }
     public PasswordBox Password(string label)
     {
@@ -85,9 +103,21 @@ public static class DesktopDialogs
         var validation = dialog.Choice("验证方式", [("dns", "DNS-01 · Cloudflare，支持通配符"), ("http", "HTTP-01 · 网站 Webroot")], existing?.Validation ?? "dns");
         var credential = dialog.Choice("DNS 凭据（DNS-01 必填）", credentials.Select(c => (c.Id, c.Name + " · " + c.ZoneName)), existing?.CredentialId ?? credentials.FirstOrDefault()?.Id);
         var webroot = dialog.Folder("网站 Webroot（HTTP-01 必填）", existing?.WebRoot ?? system.WebRoots.FirstOrDefault() ?? "", client.Endpoint.IsLoopback);
+        dialog.DirectoryError(webroot, "WEB_ROOT_INVALID");
+        dialog.Note(system.WebRoots.Length == 0
+            ? "服务尚未登记网站根目录。使用 HTTP-01 时，请管理员在服务配置的 WebRoots 中添加实际网站根目录。"
+            : "允许的网站根目录：" + string.Join("；", system.WebRoots));
         var locked = existing?.Certificate.CurrentGeneration is not null;
-        dialog.Note("目录属于当前连接的服务器；本机连接可浏览选择，仍需位于管理员批准的根目录内。\n输出根目录：" + string.Join("；", system.OutputRoots));
-        var output = dialog.Folder("保存目录 *", existing?.OutputDirectory ?? system.OutputRoots.FirstOrDefault() ?? "", client.Endpoint.IsLoopback, locked);
+        var defaultOutput = system.OutputRoots.FirstOrDefault();
+        var output = dialog.Folder("证书保存目录 *", existing?.OutputDirectory ?? defaultOutput ?? "", client.Endpoint.IsLoopback, locked);
+        dialog.DirectoryError(output, "OUTPUT_DIRECTORY_INVALID");
+        if (!locked && defaultOutput is not null)
+        {
+            var useDefault = new Button { Content = "使用默认保存目录", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 8) };
+            useDefault.Click += (_, _) => output.Text = defaultOutput;
+            dialog.Control(useDefault);
+        }
+        dialog.Note("服务允许的输出根目录：" + string.Join("；", system.OutputRoots));
         var filename = dialog.Text("基础文件名 *（不含扩展名）", existing?.FileName ?? "", readOnly: locked);
         var format = dialog.Choice("文件格式", [("both", "PEM + PFX"), ("pem", "PEM"), ("pfx", "PFX")], existing?.Format ?? "both");
         format.IsEnabled = !locked;

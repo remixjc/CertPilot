@@ -48,7 +48,7 @@ dotnet test tests/CertPilot.Tests/CertPilot.Tests.csproj -c Release
 在 Windows PowerShell 中生成完整自包含 x64 包：
 
 ```powershell
-./scripts/publish-windows.ps1 -Version 0.1.1
+./scripts/publish-windows.ps1 -Version 0.1.2
 # 本机开发打开 WPF
  dotnet run --project src/CertPilot.Desktop
 # 仅运行前台服务宿主（开发调试）
@@ -81,6 +81,14 @@ dotnet test tests/CertPilot.Tests/CertPilot.Tests.csproj -c Release
 ```
 
 `OutputRoots` 和 `WebRoots` 是服务器本地允许目录，配置保存时严格校验绝对路径、文件名、Windows 保留名称和路径越界。DNS Token 使用 Windows DPAPI LocalMachine 加密；非 Windows 开发环境使用本地 AES key，仅用于本机开发。
+
+### 保存时提示目录未授权
+
+- **证书保存目录**默认是 `%ProgramData%\CertPilot\certificates`。如果设置过 `DataDirectory`，则使用该目录下的 `certificates`。表单中的“使用默认保存目录”会填入服务当前的默认值。
+- **自定义证书输出**需要管理员将目标目录或专用父目录加入 `CertPilot.OutputRoots`。例如，使用 `D:\Certificates\etcfix` 可登记 `D:\Certificates`。
+- **HTTP-01 网站根目录**应填写实际提供站点内容的服务器目录，例如 `D:\Sites\Website`，并将它加入 `CertPilot.WebRoots`。DNS-01 通过 DNS 验证，只需要配置证书输出目录和 DNS 凭据。
+
+默认安装路径下，可在 WPF 的“本机服务与连接 → 编辑本机服务配置”打开 `%ProgramFiles%\CertPilot\service\appsettings.Local.json`。在现有 `CertPilot` 节中合并相关设置，保存后使用管理员 PowerShell 执行 `Restart-Service CertPilot`，再刷新管理端。目录还需允许 CertPilot Windows 服务账号写入。
 
 ## 证书流程
 

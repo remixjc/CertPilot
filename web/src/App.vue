@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { api, ApiError, refreshCsrf, type Certificate } from './api';
 type Screen = 'certificates' | 'credentials' | 'jobs' | 'settings';
 const me = ref<any>(null), loading = ref(true), busy = ref(false), error = ref(''), notice = ref('');
 const screen = ref<Screen>('certificates'), certificates = ref<Certificate[]>([]), credentials = ref<any[]>([]), jobs = ref<any[]>([]), tokens = ref<any[]>([]), users = ref<any[]>([]), system = ref<any>(null);
 const username = ref('admin'), password = ref(''), newPassword = ref(''), search = ref(''), selected = ref<Certificate | null>(null);
+type DirectoryField = 'outputDirectory' | 'webRoot';
+const directoryError = ref<{ field: DirectoryField; message: string } | null>(null);
+const outputInput = ref<HTMLInputElement | null>(null), webRootInput = ref<HTMLInputElement | null>(null);
+const defaultOutput = computed<string | undefined>(() => system.value?.outputRoots?.[0]);
+const outputLocked = ref(false);
+function clearDirectoryError(field: DirectoryField) {
+  if (directoryError.value?.field === field) directoryError.value = null;
+}
 const editor = ref(false), editingId = ref<string | null>(null), editingRevision = ref<number>(), domainText = ref('');
 const credentialEditor = ref(false), credentialEdit = ref<any>(null), credential = ref({name:'', zoneId:'', zoneName:'', token:''});
 const form = ref({name:'', domains:[] as string[], email:'', environment:'staging', validation:'dns', credentialId:'', webRoot:'', outputDirectory:'', fileName:'', format:'both', autoRenew:true, termsAccepted:false});
@@ -33,14 +41,34 @@ async function login() { await run(async()=> {await refreshCsrf(); await api('/a
 async function changePassword() { await run(async()=>{await api('/auth/password','POST',{currentPassword:password.value,newPassword:newPassword.value}); password.value='';newPassword.value=''; await refreshCsrf();me.value=await api('/auth/me');await load();notice.value='密码已更新。';}); }
 async function logout() {await run(async()=>{await api('/auth/logout','POST',{});me.value=null;selected.value=null;oneTimeToken.value='';password.value='';await refreshCsrf();});}
 function edit(c?:Certificate) {
-  error.value=''; editingId.value=c?.id||null; editingRevision.value=c?.revision;
+  error.value=''; directoryError.value=null; outputLocked.value=Boolean(c?.certificate.currentGeneration); editingId.value=c?.id||null; editingRevision.value=c?.revision;
   form.value=c ? {name:c.name,domains:[...c.domains],email:c.email,environment:c.environment,validation:c.validation,credentialId:c.credentialId||'',webRoot:c.webRoot||'',outputDirectory:c.outputDirectory,fileName:c.fileName,format:c.format,autoRenew:c.autoRenew,termsAccepted:c.termsAccepted}
     : {name:'',domains:[],email:'',environment:'staging',validation:'dns',credentialId:credentials.value[0]?.id||'',webRoot:system.value?.webRoots?.[0]||'',outputDirectory:system.value?.outputRoots?.[0]||'',fileName:'',format:'both',autoRenew:true,termsAccepted:false};
   domainText.value=form.value.domains.join('\n'); editor.value=true;
 }
 async function save() {await run(async()=>{
-  const body={...form.value,domains:domainText.value.split(/[\s,，;；]+/).filter(Boolean),credentialId:form.value.validation==='dns'?form.value.credentialId:null,webRoot:form.value.validation==='http'?form.value.webRoot:null};
-  const saved=await api<Certificate>(editingId.value?`/certificates/${editingId.value}`:'/certificates',editingId.value?'PUT':'POST',body,editingRevision.value);
+  directoryError.value = null;
+  const body = {
+    ...form.value,
+    domains: domainText.value.split(/[\s,，;；]+/).filter(Boolean),
+    credentialId: form.value.validation === 'dns' ? form.value.credentialId : null,
+    outputDirectory: form.value.outputDirectory.trim(),
+    webRoot: form.value.validation === 'http' ? form.value.webRoot.trim() : null,
+  };
+  let saved: Certificate;
+  try {
+    saved = await api<Certificate>(editingId.value ? `/certificates/${editingId.value}` : '/certificates', editingId.value ? 'PUT' : 'POST', body, editingRevision.value);
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e;
+    const field = e.code === 'OUTPUT_DIRECTORY_INVALID' ? 'outputDirectory' : e.code === 'WEB_ROOT_INVALID' ? 'webRoot' : null;
+    if (!field) throw e;
+    directoryError.value = { field, message: e.message };
+    await nextTick();
+    const input = field === 'outputDirectory' ? outputInput : webRootInput;
+    input.value?.focus();
+    input.value?.scrollIntoView({ block: 'center' });
+    return;
+  }
   editor.value=false; await load(); selected.value=saved;notice.value='配置已保存，可在详情中发起签发。';
 });}
 async function job(c:Certificate,kind:string) {await run(async()=>{const response=await api(`/certificates/${c.id}/${kind}`,'POST',{domain:kind==='inspections'?inspectDomain.value||undefined:undefined});notice.value=`任务已加入队列 · ${response.jobId.slice(0,8)}`;await load();});}
@@ -83,6 +111,20 @@ onUnmounted(()=>clearInterval(timer));
       <footer class="app-footer"><span>CertPilot · 让安全连接持续在线</span><span>自托管证书自动化 / v0.1.0</span></footer></div>
     </div>
   </div>
-  <div v-if="editor" class="modal-backdrop" @click.self="editor=false"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header><div><p class="eyebrow">CERTIFICATE CONFIGURATION</p><h2 id="editor-title">{{editingId?'编辑证书':'新建证书'}}</h2></div><button class="close" aria-label="关闭" @click="editor=false">×</button></header><form @submit.prevent="save"><div class="modal-body"><p v-if="error" class="message error" role="alert">{{error}}</p><div class="form-row"><label>证书名称 *<input v-model="form.name" required maxlength="80" placeholder="例如：官方网站"></label><label>联系邮箱 *<input v-model="form.email" type="email" required placeholder="admin@example.com"></label></div><label>域名 *<textarea v-model="domainText" rows="3" required placeholder="example.com&#10;*.example.com"></textarea><small>每行一个域名。通配符必须选择 DNS-01。</small></label><div class="form-row"><label>CA 环境<select v-model="form.environment"><option value="staging">测试 / Staging（不受浏览器信任）</option><option value="production">正式 / Production</option></select></label><label>验证方式<select v-model="form.validation"><option value="dns">DNS-01 / Cloudflare</option><option value="http">HTTP-01 / Webroot</option></select></label></div><label v-if="form.validation==='dns'">DNS 凭据 *<select v-model="form.credentialId" required><option disabled value="">请先在 DNS 凭据页添加授权</option><option v-for="c in credentials" :key="c.id" :value="c.id">{{c.name}} · {{c.zoneName}}</option></select></label><label v-else>网站 Webroot *<input v-model="form.webRoot" required placeholder="服务器网站根目录"><small>需由管理员登记至 WebRoots；公网 80 端口应能读取此目录的 .well-known/acme-challenge。</small></label><div class="form-divider">证书输出 <span>路径属于服务器</span></div><label>保存目录 *<input v-model="form.outputDirectory" required placeholder="服务器本地绝对目录"><small>允许根目录：{{system?.outputRoots?.join('；')}}</small></label><div class="form-row"><label>基础文件名 *<input v-model="form.fileName" required placeholder="example-com" maxlength="64"></label><label>输出格式<select v-model="form.format"><option value="both">PEM + PFX</option><option value="pem">PEM</option><option value="pfx">PFX</option></select></label></div><label class="checkbox"><input v-model="form.autoRenew" type="checkbox">开启自动续期</label><label class="checkbox"><input v-model="form.termsAccepted" type="checkbox">我已阅读并接受 <a href="https://letsencrypt.org/repository/" target="_blank" rel="noreferrer">Let's Encrypt 订阅协议 ↗</a></label><p v-if="form.environment==='production'" class="hint">正式签发受 CA 频率限制。建议先在测试环境验证域名与目录配置。</p></div><footer><button type="button" class="secondary" @click="editor=false">取消</button><button class="primary" :disabled="busy">{{busy?'保存中…':'保存配置'}}</button></footer></form></section></div>
+  <div v-if="editor" class="modal-backdrop" @click.self="editor=false"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><header><div><p class="eyebrow">CERTIFICATE CONFIGURATION</p><h2 id="editor-title">{{editingId?'编辑证书':'新建证书'}}</h2></div><button class="close" aria-label="关闭" @click="editor=false">×</button></header><form @submit.prevent="save"><div class="modal-body"><p v-if="error" class="message error" role="alert">{{error}}</p><div class="form-row"><label>证书名称 *<input v-model="form.name" required maxlength="80" placeholder="例如：官方网站"></label><label>联系邮箱 *<input v-model="form.email" type="email" required placeholder="admin@example.com"></label></div><label>域名 *<textarea v-model="domainText" rows="3" required placeholder="example.com&#10;*.example.com"></textarea><small>每行一个域名。通配符必须选择 DNS-01。</small></label><div class="form-row"><label>CA 环境<select v-model="form.environment"><option value="staging">测试 / Staging（不受浏览器信任）</option><option value="production">正式 / Production</option></select></label><label>验证方式<select v-model="form.validation" @change="clearDirectoryError('webRoot')"><option value="dns">DNS-01 / Cloudflare</option><option value="http">HTTP-01 / Webroot</option></select></label></div><label v-if="form.validation==='dns'">DNS 凭据 *<select v-model="form.credentialId" required><option disabled value="">请先在 DNS 凭据页添加授权</option><option v-for="c in credentials" :key="c.id" :value="c.id">{{c.name}} · {{c.zoneName}}</option></select></label><div v-else class="directory-group">
+  <label>HTTP-01 网站根目录 *<input ref="webRootInput" v-model="form.webRoot" required placeholder="服务器实际网站根目录" aria-describedby="webroot-hint webroot-error" :aria-invalid="directoryError?.field === 'webRoot'" @input="clearDirectoryError('webRoot')">
+    <small id="webroot-hint">{{ system?.webRoots?.length ? '允许的网站根目录：' + system.webRoots.join('；') : '服务尚未登记网站根目录。请管理员将实际站点目录加入服务配置的 WebRoots。' }}</small>
+  </label>
+  <p v-if="directoryError?.field === 'webRoot'" id="webroot-error" class="directory-error" role="alert">{{ directoryError.message }}</p>
+</div>
+<div class="form-divider">证书输出 <span>路径属于服务器</span></div>
+<div class="directory-group">
+  <label>证书保存目录 *<input ref="outputInput" v-model="form.outputDirectory" required :readonly="outputLocked" placeholder="服务器本地绝对目录" aria-describedby="output-hint output-error" :aria-invalid="directoryError?.field === 'outputDirectory'" @input="clearDirectoryError('outputDirectory')">
+    <small id="output-hint">允许的输出根目录：{{ system?.outputRoots?.join('；') }}</small>
+  </label>
+  <p v-if="directoryError?.field === 'outputDirectory'" id="output-error" class="directory-error" role="alert">{{ directoryError.message }}</p>
+  <button v-if="defaultOutput && !outputLocked" type="button" class="secondary" @click="form.outputDirectory = defaultOutput; clearDirectoryError('outputDirectory')">使用默认保存目录</button>
+</div>
+<div class="form-row"><label>基础文件名 *<input v-model="form.fileName" required placeholder="example-com" maxlength="64"></label><label>输出格式<select v-model="form.format"><option value="both">PEM + PFX</option><option value="pem">PEM</option><option value="pfx">PFX</option></select></label></div><label class="checkbox"><input v-model="form.autoRenew" type="checkbox">开启自动续期</label><label class="checkbox"><input v-model="form.termsAccepted" type="checkbox">我已阅读并接受 <a href="https://letsencrypt.org/repository/" target="_blank" rel="noreferrer">Let's Encrypt 订阅协议 ↗</a></label><p v-if="form.environment==='production'" class="hint">正式签发受 CA 频率限制。建议先在测试环境验证域名与目录配置。</p></div><footer><button type="button" class="secondary" @click="editor=false">取消</button><button class="primary" :disabled="busy">{{busy?'保存中…':'保存配置'}}</button></footer></form></section></div>
   <div v-if="credentialEditor" class="modal-backdrop" @click.self="credentialEditor=false"><section class="modal compact" role="dialog" aria-modal="true" aria-labelledby="credential-title"><header><div><p class="eyebrow">CLOUDFLARE DNS</p><h2 id="credential-title">{{credentialEdit?'替换 DNS Token':'添加 DNS 凭据'}}</h2></div><button class="close" aria-label="关闭" @click="credentialEditor=false">×</button></header><form @submit.prevent="saveCredential"><div class="modal-body"><p v-if="error" class="message error" role="alert">{{error}}</p><label>凭据名称 *<input v-model="credential.name" required maxlength="80"></label><label>Zone 域名 *<input v-model="credential.zoneName" required :readonly="!!credentialEdit" placeholder="example.com"></label><label>Zone ID *<input v-model="credential.zoneId" required :readonly="!!credentialEdit" pattern="[a-fA-F0-9]{32}"></label><label>API Token *<input v-model="credential.token" type="password" required autocomplete="off"><small>限制为该 Zone 的 DNS Edit 权限。</small></label><p class="hint">当前仅支持 Cloudflare 直接托管的 Zone。Token 加密保存在服务器，保存后无法回读。</p></div><footer><button type="button" class="secondary" @click="credentialEditor=false">取消</button><button class="primary" :disabled="busy">保存凭据</button></footer></form></section></div>
 </template>

@@ -57,10 +57,19 @@ public sealed class PilotClient : IDisposable
         if (!response.IsSuccessStatusCode)
         {
             var text = await response.Content.ReadAsStringAsync();
-            string message;
-            try { message = JsonDocument.Parse(text).RootElement.GetProperty("detail").GetString() ?? response.ReasonPhrase!; }
-            catch { message = response.StatusCode == HttpStatusCode.Unauthorized ? "尚未登录或会话已过期，请重新登录。" : $"请求失败：HTTP {(int)response.StatusCode}"; }
-            throw new PilotClientException(response.StatusCode, message);
+            var message = response.StatusCode == HttpStatusCode.Unauthorized ? "尚未登录或会话已过期，请重新登录。" : $"请求失败：HTTP {(int)response.StatusCode}";
+            string? code = null;
+            try
+            {
+                using var problem = JsonDocument.Parse(text);
+                if (problem.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    if (problem.RootElement.TryGetProperty("detail", out var detail) && detail.ValueKind == JsonValueKind.String) message = detail.GetString()!;
+                    if (problem.RootElement.TryGetProperty("code", out var errorCode) && errorCode.ValueKind == JsonValueKind.String) code = errorCode.GetString();
+                }
+            }
+            catch (JsonException) { }
+            throw new PilotClientException(response.StatusCode, message, code);
         }
         if (response.StatusCode == HttpStatusCode.NoContent) return default!;
         return (await response.Content.ReadFromJsonAsync<T>())!;
@@ -77,9 +86,10 @@ public sealed class PilotClient : IDisposable
     }
     public void Dispose() => http.Dispose();
 }
-public sealed class PilotClientException(HttpStatusCode status, string message) : Exception(message)
+public sealed class PilotClientException(HttpStatusCode status, string message, string? code = null) : Exception(message)
 {
     public HttpStatusCode Status { get; } = status;
+    public string? Code { get; } = code;
 }
 public sealed record Page<T>(List<T> Items, string? NextCursor);
 public sealed record UserInfo(string UserName, bool MustChangePassword, string[] Roles)

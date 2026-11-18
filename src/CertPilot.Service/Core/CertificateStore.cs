@@ -27,7 +27,7 @@ public sealed class CertificateStore(PilotDb db, PilotOptions options)
         if (input.Validation == "dns" && !await db.Credentials.AnyAsync(c => c.Id == input.CredentialId))
             throw ConfigValidation.Invalid("DNS 凭据不存在。");
         var all = await db.Certificates.ToListAsync();
-        if (all.Any(c => c.Id != id && string.Equals(c.OutputDirectory, input.OutputDirectory, StringComparison.OrdinalIgnoreCase)
+        if (all.Any(c => c.Id != id && string.Equals(Path.TrimEndingDirectorySeparator(c.OutputDirectory), input.OutputDirectory, StringComparison.OrdinalIgnoreCase)
             && string.Equals(c.FileName, input.FileName, StringComparison.OrdinalIgnoreCase)))
             throw new PilotException(409, "OUTPUT_CONFLICT", "保存目录和文件名与另一证书冲突。");
         var c = id is null ? new CertificateConfig() : all.Find(c => c.Id == id)
@@ -36,7 +36,7 @@ public sealed class CertificateStore(PilotDb db, PilotOptions options)
         if (id is not null && await db.Jobs.AnyAsync(j => j.CertificateId == id && (j.Status == "queued" || j.Status == "running")))
             throw new PilotException(409, "JOB_ACTIVE", "请等待当前任务完成后修改。");
         var identityChanged = c.DomainsJson != JsonSerializer.Serialize(input.Domains) || c.Environment != input.Environment;
-        if (c.CurrentGeneration is not null && (c.OutputDirectory != input.OutputDirectory || c.FileName != input.FileName || c.Format != input.Format))
+        if (c.CurrentGeneration is not null && (Path.TrimEndingDirectorySeparator(c.OutputDirectory) != input.OutputDirectory || c.FileName != input.FileName || c.Format != input.Format))
             throw new PilotException(409, "EXPORT_CHANGE_REQUIRES_NEW_CONFIG", "v0.1 已签发配置暂不支持改变输出位置/格式；请新建配置。");
         c.Name = input.Name; c.DomainsJson = JsonSerializer.Serialize(input.Domains); c.Email = input.Email;
         c.Environment = input.Environment; c.Validation = input.Validation; c.CredentialId = input.CredentialId;

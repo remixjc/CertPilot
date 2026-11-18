@@ -31,4 +31,25 @@ public class UnitTest1
         Assert.Throws<PilotException>(() => ConfigValidation.SafePath(Path.GetTempPath(), [Path.Combine(root, "sub")]));
         Assert.Throws<PilotException>(() => ConfigValidation.ValidateFileName("CON"));
     }
+
+    [Fact]
+    public void CertificateValidationReturnsTheRejectedDirectoryField()
+    {
+        var options = new PilotOptions { DataDirectory = Path.Combine(Path.GetTempPath(), "certpilot-tests") };
+        var input = new CertificateInput("demo", ["example.com"], "ops@example.com", "staging", "http", null,
+            Path.Combine(options.DataDirectory, "website"), options.EffectiveOutputRoot + "-outside", "demo", "pem", true, false);
+
+        var outputError = Assert.Throws<PilotException>(() => ConfigValidation.Validate(input, options));
+        Assert.Equal("OUTPUT_DIRECTORY_INVALID", outputError.Code);
+
+        input = input with { OutputDirectory = options.EffectiveOutputRoot + Path.DirectorySeparatorChar };
+        var webRootError = Assert.Throws<PilotException>(() => ConfigValidation.Validate(input, options));
+        Assert.Equal("WEB_ROOT_INVALID", webRootError.Code);
+        Assert.Contains("尚未配置 WebRoots", webRootError.Message);
+
+        options.WebRoots = [input.WebRoot!];
+        var validated = ConfigValidation.Validate(input, options);
+        Assert.Equal(options.EffectiveOutputRoot, validated.OutputDirectory);
+        Assert.Equal(input.WebRoot, validated.WebRoot);
+    }
 }
